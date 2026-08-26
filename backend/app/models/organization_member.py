@@ -1,9 +1,10 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, UniqueConstraint
+from sqlalchemy import DateTime,Enum as SQLEnum,ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.base import Base
+from app.core.enums.roles import OrganizationRole
 
 
 class OrganizationMember(Base):
@@ -33,12 +34,17 @@ class OrganizationMember(Base):
         nullable=False,
         index=True,
     )
+    role: Mapped[OrganizationRole] = mapped_column(
+    SQLEnum(
+        OrganizationRole,
+        name="organization_role",
+        values_callable=lambda enum: [member.value for member in enum],
+    ),
+    nullable=False,
+    default=OrganizationRole.MEMBER,
+)
 
-    role: Mapped[str] = mapped_column(
-        String(50),
-        nullable=False,
-        default="member",
-    )
+   
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
