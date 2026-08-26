@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String
+from sqlalchemy import DateTime, ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.base import Base
@@ -8,6 +8,14 @@ from app.database.base import Base
 
 class OrganizationMember(Base):
     __tablename__ = "organization_members"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "organization_id",
+            "user_id",
+            name="uq_organization_member",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(
         primary_key=True,
