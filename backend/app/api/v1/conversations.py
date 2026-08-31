@@ -7,16 +7,21 @@ from app.core.security.organization import get_current_membership, require_roles
 from app.database.session import get_db
 from app.models.conversation import Conversation
 from app.models.customer import Customer
+from app.models.user import User
 from app.models.organization_member import OrganizationMember
 from app.schemas.conversation import (
     ConversationCreate,
     ConversationResponse,
 )
 from app.services.conversation_service import (
+    assign_agent,
     create_conversation,
     get_conversation,
     get_organization_conversations,
+    update_priority,
 )
+from sqlalchemy import select
+
 
 
 router = APIRouter(
@@ -108,3 +113,96 @@ def get_single_conversation(
         )
 
     return conversation
+
+@router.patch(
+    "/{conversation_id}/assign",
+    response_model=ConversationResponse,
+)
+def assign_conversation_agent(
+    organization_id: int,
+    conversation_id: int,
+    agent_id: int,
+    membership: OrganizationMember = Depends(
+        require_roles(
+            OrganizationRole.OWNER,
+            OrganizationRole.ADMIN,
+        )
+    ),
+    db: Session = Depends(get_db),
+):
+    conversation = get_conversation(
+        db=db,
+        conversation_id=conversation_id,
+    )
+
+    if conversation is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Conversation not found.",
+        )
+
+    if conversation.organization_id != organization_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Conversation not found.",
+        )
+
+    agent_membership = db.scalar(
+        select(OrganizationMember).where(
+            OrganizationMember.organization_id == organization_id,
+            OrganizationMember.user_id == agent_id,
+            OrganizationMember.role == OrganizationRole.AGENT,
+        )
+    )
+
+    if agent_membership is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User is not an agent in this organization.",
+        )
+
+    return assign_agent(
+        db=db,
+        conversation=conversation,
+        agent_id=agent_id,
+    )
+
+
+@router.patch(
+    "/{conversation_id}/priority",
+    response_model=ConversationResponse,
+)
+def change_conversation_priority(
+    organization_id: int,
+    conversation_id: int,
+    priority: ConversationPriority,
+    membership: OrganizationMember = Depends(
+        require_roles(
+            OrganizationRole.OWNER,
+            OrganizationRole.ADMIN,
+        )
+    ),
+    db: Session = Depends(get_db),
+):
+    conversation = get_conversation(
+        db=db,
+        conversation_id=conversation_id,
+    )
+
+    if conversation is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Conversation not found.",
+        )
+
+    if conversation.organization_id != organization_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Conversation not found.",
+        )
+
+    return update_priority(
+        db=db,
+        conversation=conversation,
+        priority=priority,
+    )
