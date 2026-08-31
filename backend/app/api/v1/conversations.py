@@ -19,8 +19,12 @@ from app.services.conversation_service import (
     get_conversation,
     get_organization_conversations,
     update_priority,
+    update_status
 )
 from sqlalchemy import select
+from datetime import datetime
+
+from app.core.enums.conversation import ConversationPriority, ConversationStatus
 
 
 
@@ -205,4 +209,44 @@ def change_conversation_priority(
         db=db,
         conversation=conversation,
         priority=priority,
+    )
+
+
+@router.patch(
+    "/{conversation_id}/status",
+    response_model=ConversationResponse,
+)
+def change_conversation_status(
+    organization_id: int,
+    conversation_id: int,
+    conversation_status: ConversationStatus,
+    membership: OrganizationMember = Depends(
+        require_roles(
+            OrganizationRole.OWNER,
+            OrganizationRole.ADMIN,
+        )
+    ),
+    db: Session = Depends(get_db),
+):
+    conversation = get_conversation(
+        db=db,
+        conversation_id=conversation_id,
+    )
+
+    if conversation is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Conversation not found.",
+        )
+
+    if conversation.organization_id != organization_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Conversation not found.",
+        )
+
+    return update_status(
+        db=db,
+        conversation=conversation,
+        status=conversation_status,
     )

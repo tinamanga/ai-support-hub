@@ -3,7 +3,9 @@ from sqlalchemy.orm import Session
 
 from app.core.enums.conversation import ConversationPriority
 from app.models.conversation import Conversation
+from datetime import datetime
 
+from app.core.enums.conversation import ConversationStatus
 
 def create_conversation(
     db: Session,
@@ -76,3 +78,21 @@ def update_priority(
     db.refresh(conversation)
 
     return conversation
+
+def update_status(
+    db: Session,
+    conversation: Conversation,
+    status: ConversationStatus,
+) -> Conversation:
+    conversation.status = status
+
+    if status == ConversationStatus.RESOLVED:
+        conversation.resolved_at = datetime.utcnow()
+
+    elif status == ConversationStatus.CLOSED:
+        conversation.closed_at = datetime.utcnow()
+
+    db.commit()
+    db.refresh(conversation)
+
+    return conversation  
