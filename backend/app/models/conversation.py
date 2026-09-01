@@ -22,10 +22,10 @@ class Conversation(Base):
         index=True,
     )
 
-    customer_id: Mapped[int] = mapped_column(
-        ForeignKey("customers.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
+    customer_id: Mapped[int | None] = mapped_column(
+    ForeignKey("customers.id", ondelete="SET NULL"),
+    nullable=True,
+    index=True,
     )
 
     assigned_agent_id: Mapped[int | None] = mapped_column(

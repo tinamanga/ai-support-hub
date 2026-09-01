@@ -26,7 +26,7 @@ class ConversationResponse(BaseModel):
 
     id: int
     organization_id: int
-    customer_id: int
+    customer_id: int | None
     assigned_agent_id: int | None
     subject: str | None
     status: ConversationStatus

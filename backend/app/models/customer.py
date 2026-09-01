@@ -53,4 +53,5 @@ class Customer(Base):
     conversations = relationship(
         "Conversation",
         back_populates="customer",
+        passive_deletes=True,
     )
