@@ -8,7 +8,6 @@ from app.core.enums.message import MessageSenderType
 class MessageCreate(BaseModel):
     content: str
     sender_type: MessageSenderType
-    sender_user_id: int | None = None
 
 
 class MessageResponse(BaseModel):
