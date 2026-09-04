@@ -1,11 +1,14 @@
+from datetime import UTC, datetime
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.core.enums.conversation import ConversationPriority
+from app.core.enums.conversation import (
+    ConversationPriority,
+    ConversationStatus,
+)
 from app.models.conversation import Conversation
-from datetime import datetime
 
-from app.core.enums.conversation import ConversationStatus
 
 def create_conversation(
     db: Session,
@@ -79,6 +82,7 @@ def update_priority(
 
     return conversation
 
+
 def update_status(
     db: Session,
     conversation: Conversation,
@@ -87,12 +91,12 @@ def update_status(
     conversation.status = status
 
     if status == ConversationStatus.RESOLVED:
-        conversation.resolved_at = datetime.utcnow()
+        conversation.resolved_at = datetime.now(UTC)
 
     elif status == ConversationStatus.CLOSED:
-        conversation.closed_at = datetime.utcnow()
+        conversation.closed_at = datetime.now(UTC)
 
     db.commit()
     db.refresh(conversation)
 
-    return conversation  
+    return conversation

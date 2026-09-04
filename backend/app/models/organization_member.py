@@ -1,10 +1,10 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
-from sqlalchemy import DateTime,Enum as SQLEnum,ForeignKey, String, UniqueConstraint
+from sqlalchemy import DateTime, Enum as SQLEnum, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.database.base import Base
 from app.core.enums.roles import OrganizationRole
+from app.database.base import Base
 
 
 class OrganizationMember(Base):
@@ -24,30 +24,37 @@ class OrganizationMember(Base):
     )
 
     organization_id: Mapped[int] = mapped_column(
-        ForeignKey("organizations.id", ondelete="CASCADE"),
+        ForeignKey(
+            "organizations.id",
+            ondelete="CASCADE",
+        ),
         nullable=False,
         index=True,
     )
 
     user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"),
+        ForeignKey(
+            "users.id",
+            ondelete="CASCADE",
+        ),
         nullable=False,
         index=True,
     )
-    role: Mapped[OrganizationRole] = mapped_column(
-    SQLEnum(
-        OrganizationRole,
-        name="organization_role",
-        values_callable=lambda enum: [member.value for member in enum],
-    ),
-    nullable=False,
-    default=OrganizationRole.MEMBER,
-)
 
-   
+    role: Mapped[OrganizationRole] = mapped_column(
+        SQLEnum(
+            OrganizationRole,
+            name="organization_role",
+            values_callable=lambda enum: [
+                member.value for member in enum
+            ],
+        ),
+        nullable=False,
+        default=OrganizationRole.MEMBER,
+    )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=datetime.utcnow,
+        default=lambda: datetime.now(UTC),
         nullable=False,
     )
