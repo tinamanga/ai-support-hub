@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     DEBUG: bool = True
 
     DATABASE_URL: str
+    TEST_DATABASE_URL: str
 
     SECRET_KEY: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60

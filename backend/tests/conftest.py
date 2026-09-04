@@ -1,18 +1,14 @@
-import os
-
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
+from app.core.config import settings
 from app.database.session import get_db
 from app.main import app
 
 
-TEST_DATABASE_URL = os.getenv(
-    "TEST_DATABASE_URL",
-    "postgresql+psycopg://ai_support_user:dgzk1006@localhost:5432/ai_support_hub_test",
-)
+TEST_DATABASE_URL = settings.TEST_DATABASE_URL
 
 test_engine = create_engine(
     TEST_DATABASE_URL,
@@ -24,6 +20,32 @@ TestingSessionLocal = sessionmaker(
     autoflush=False,
     autocommit=False,
 )
+
+
+def reset_test_database():
+    """Remove all test data while preserving the database schema."""
+
+    with test_engine.begin() as connection:
+        connection.execute(
+            text(
+                """
+                TRUNCATE TABLE
+                    organization_members,
+                    conversations,
+                    customers,
+                    messages,
+                    organizations,
+                    users
+                RESTART IDENTITY CASCADE
+                """
+            )
+        )
+
+
+@pytest.fixture(scope="session", autouse=True)
+def clean_test_database():
+    """Start every pytest session with a clean test database."""
+    reset_test_database()
 
 
 def override_get_db():
