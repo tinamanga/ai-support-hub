@@ -38,41 +38,26 @@ export default function AuthProvider({
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    let cancelled = false;
-
     async function initializeAuth() {
       const token = getAccessToken();
 
       if (!token) {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
+        setIsLoading(false);
         return;
       }
 
       try {
         const currentUser = await getCurrentUser(token);
-
-        if (!cancelled) {
-          setUser(currentUser);
-        }
+        setUser(currentUser);
       } catch {
-        if (!cancelled) {
-          clearAccessToken();
-          setUser(null);
-        }
+        clearAccessToken();
+        setUser(null);
       } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
+        setIsLoading(false);
       }
     }
 
     void initializeAuth();
-
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
   async function refreshUser() {

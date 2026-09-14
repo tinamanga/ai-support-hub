@@ -11,43 +11,43 @@ import {
   Settings,
 } from "lucide-react";
 
+import { useAuth } from "@/components/auth/AuthProvider";
+
 const navigation = [
-  {
-    name: "Dashboard",
-    href: "/dashboard",
-    icon: BarChart3,
-  },
-  {
-    name: "Organizations",
-    href: "/organizations",
-    icon: Building2,
-  },
-  {
-    name: "Customers",
-    href: "/customers",
-    icon: CircleUserRound,
-  },
-  {
-    name: "Conversations",
-    href: "/conversations",
-    icon: MessageSquare,
-  },
+  { name: "Dashboard", href: "/dashboard", icon: BarChart3 },
+  { name: "Organizations", href: "/organizations", icon: Building2 },
+  { name: "Customers", href: "/customers", icon: CircleUserRound },
+  { name: "Conversations", href: "/conversations", icon: MessageSquare },
 ];
 
 const secondaryNavigation = [
-  {
-    name: "Settings",
-    href: "/settings",
-    icon: Settings,
-  },
+  { name: "Settings", href: "/settings", icon: Settings },
 ];
+
+function getInitials(fullName: string | null, email: string): string {
+  if (fullName?.trim()) {
+    return fullName
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((part) => part[0])
+      .join("")
+      .toUpperCase();
+  }
+
+  return email.slice(0, 2).toUpperCase();
+}
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { user } = useAuth();
+
+  const fullName = user?.full_name || "User";
+  const email = user?.email || "";
+  const initials = getInitials(user?.full_name ?? null, email);
 
   return (
     <aside className="hidden w-64 shrink-0 border-r border-border bg-surface lg:flex lg:flex-col">
-      {/* Brand */}
       <div className="flex h-16 items-center border-b border-border px-6">
         <Link href="/dashboard" className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-sm font-bold text-white">
@@ -61,7 +61,6 @@ export default function Sidebar() {
         </Link>
       </div>
 
-      {/* Navigation */}
       <nav
         className="flex-1 space-y-8 overflow-y-auto px-3 py-6"
         aria-label="Main navigation"
@@ -165,20 +164,19 @@ export default function Sidebar() {
         </div>
       </nav>
 
-      {/* User area */}
       <div className="border-t border-border p-3">
         <div className="flex items-center gap-3 rounded-lg px-3 py-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-light text-sm font-semibold text-primary">
-            CM
+            {initials}
           </div>
 
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-text">
-              Christina Manga
+              {fullName}
             </p>
 
             <p className="truncate text-xs text-text-muted">
-              Software Engineer
+              {email}
             </p>
           </div>
         </div>
