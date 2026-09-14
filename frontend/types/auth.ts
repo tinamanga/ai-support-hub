@@ -21,3 +21,10 @@ export interface AuthUser extends User {
   organization?: Organization;
   membership?: OrganizationMember;
 }
+
+export interface RegisterResponse {
+    user: User;
+    organization_id: number;
+    organization_name: string;
+    role: string;
+  }

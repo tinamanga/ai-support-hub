@@ -3,6 +3,7 @@ import type {
   LoginRequest,
   LoginResponse,
   RegisterRequest,
+  RegisterResponse,
 } from "@/types/auth";
 import type { User } from "@/types/api";
 
@@ -17,8 +18,8 @@ export async function login(
 
 export async function register(
   data: RegisterRequest,
-): Promise<User> {
-  return apiRequest<User>("/api/v1/auth/register", {
+): Promise<RegisterResponse> {
+  return apiRequest<RegisterResponse>("/api/v1/auth/register", {
     method: "POST",
     body: JSON.stringify(data),
   });

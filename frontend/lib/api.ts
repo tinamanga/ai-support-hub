@@ -4,6 +4,13 @@ interface RequestOptions extends RequestInit {
   token?: string;
 }
 
+interface ApiValidationError {
+  detail?: string | Array<{
+    loc?: Array<string | number>;
+    msg?: string;
+  }>;
+}
+
 export async function apiRequest<T>(
   endpoint: string,
   options: RequestOptions = {},
@@ -15,9 +22,7 @@ export async function apiRequest<T>(
     headers: {
       "Content-Type": "application/json",
       ...(token
-        ? {
-            Authorization: `Bearer ${token}`,
-          }
+        ? { Authorization: `Bearer ${token}` }
         : {}),
       ...headers,
     },
@@ -27,13 +32,19 @@ export async function apiRequest<T>(
     let message = `Request failed with status ${response.status}`;
 
     try {
-      const errorData = await response.json();
+      const errorData: ApiValidationError =
+        await response.json();
 
-      if (typeof errorData?.detail === "string") {
+      if (typeof errorData.detail === "string") {
         message = errorData.detail;
+      } else if (Array.isArray(errorData.detail)) {
+        message = errorData.detail
+          .map((error) => error.msg)
+          .filter(Boolean)
+          .join(". ");
       }
     } catch {
-      // Keeps the default error message when the response is not JSON.
+      // Keep the default HTTP status message.
     }
 
     throw new Error(message);
