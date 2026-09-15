@@ -27,3 +27,13 @@ export interface User {
     role: OrganizationRole;
     created_at: string;
   }
+
+  export interface Customer {
+    id: number;
+    organization_id: number;
+    full_name: string;
+    email: string | null;
+    phone: string | null;
+    created_at: string;
+    updated_at: string;
+  }
