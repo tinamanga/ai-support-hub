@@ -37,3 +37,29 @@ export interface User {
     created_at: string;
     updated_at: string;
   }
+
+  export type ConversationStatus =
+  | "open"
+  | "pending"
+  | "resolved"
+  | "closed";
+
+export type ConversationPriority =
+  | "low"
+  | "medium"
+  | "high"
+  | "urgent";
+
+export interface Conversation {
+  id: number;
+  organization_id: number;
+  customer_id: number | null;
+  assigned_agent_id: number | null;
+  subject: string | null;
+  status: ConversationStatus;
+  priority: ConversationPriority;
+  resolved_at: string | null;
+  closed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
