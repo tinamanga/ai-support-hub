@@ -299,7 +299,7 @@ backend/
 │
 ├── app/
 │   ├── api/
-│   │   ├── routes/
+│   │   ├── v1/
 │   │   │   ├── auth.py
 │   │   │   ├── organizations.py
 │   │   │   ├── customers.py
@@ -317,7 +317,7 @@ backend/
 │   │   └── security/
 │   │       ├── auth.py
 │   │       ├── dependencies.py
-│   │       └── ...
+│   │       └── organization.py
 │   │
 │   ├── database/
 │   │   ├── base.py
