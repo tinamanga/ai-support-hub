@@ -1,5 +1,7 @@
+
 "use client";
 
+// Importing icons for navigation, actions, statuses, and conversation controls.
 import {
   AlertCircle,
   ChevronDown,
@@ -11,22 +13,33 @@ import {
   UserRound,
   X,
 } from "lucide-react";
+
+// Importing React hooks for managing state, effects, and derived data.
 import { useEffect, useMemo, useState } from "react";
 
+// Importing Next.js routing for opening conversation details.
+import { useRouter } from "next/navigation";
+
+// Importing authentication and API utilities.
 import { useAuth } from "@/components/auth/AuthProvider";
 import { getAccessToken } from "@/lib/auth-storage";
+
+// Importing conversation API functions.
 import {
   createConversation,
   getConversations,
   updateConversationPriority,
   updateConversationStatus,
 } from "@/lib/conversations";
+
+// Importing customer and organization API functions.
 import { getCustomers } from "@/lib/customers";
 import {
   getOrganizationMembers,
   getOrganizations,
 } from "@/lib/organizations";
 
+// Importing shared application types.
 import type {
   Conversation,
   ConversationPriority,
@@ -36,6 +49,7 @@ import type {
   OrganizationMember,
 } from "@/types/api";
 
+// Defining the available conversation priorities.
 const PRIORITIES: ConversationPriority[] = [
   "low",
   "medium",
@@ -43,6 +57,7 @@ const PRIORITIES: ConversationPriority[] = [
   "urgent",
 ];
 
+// Defining the available conversation statuses.
 const STATUSES: ConversationStatus[] = [
   "open",
   "pending",
@@ -50,6 +65,7 @@ const STATUSES: ConversationStatus[] = [
   "closed",
 ];
 
+// Formatting conversation dates for readable display.
 function formatDate(value: string): string {
   return new Intl.DateTimeFormat("en", {
     dateStyle: "medium",
@@ -57,6 +73,7 @@ function formatDate(value: string): string {
   }).format(new Date(value));
 }
 
+// Applying visual styling based on the conversation priority.
 function getPriorityClasses(
   priority: ConversationPriority,
 ): string {
@@ -72,6 +89,7 @@ function getPriorityClasses(
   }
 }
 
+// Applying visual styling based on the conversation status.
 function getStatusClasses(status: ConversationStatus): string {
   switch (status) {
     case "open":
@@ -85,6 +103,7 @@ function getStatusClasses(status: ConversationStatus): string {
   }
 }
 
+// Resolving and displaying the customer name for a conversation.
 function getCustomerName(
   customerId: number | null,
   customers: Customer[],
@@ -99,6 +118,7 @@ function getCustomerName(
   );
 }
 
+// Resolving and displaying the assigned agent for a conversation.
 function getAgentName(
   agentId: number | null,
   members: OrganizationMember[],
@@ -114,59 +134,93 @@ function getAgentName(
   return agent ? `Agent #${agent.user_id}` : `Agent #${agentId}`;
 }
 
+// Rendering the conversations management page.
 export default function ConversationsPage() {
+  // Reading the authenticated user and authentication state.
   const {
     user,
     isAuthenticated,
     isLoading: authLoading,
   } = useAuth();
 
+  // Creating the router for navigating to conversation details.
+  const router = useRouter();
+
+  // Storing the organizations available to the current user.
   const [organizations, setOrganizations] = useState<
     Organization[]
   >([]);
+
+  // Tracking the currently selected organization.
   const [selectedOrganizationId, setSelectedOrganizationId] =
     useState<number | null>(null);
 
+  // Storing conversations belonging to the selected organization.
   const [conversations, setConversations] = useState<
     Conversation[]
   >([]);
+
+  // Storing customers belonging to the selected organization.
   const [customers, setCustomers] = useState<Customer[]>([]);
+
+  // Storing organization membership records.
   const [members, setMembers] = useState<OrganizationMember[]>([]);
 
+  // Tracking organization loading state.
   const [isLoadingOrganizations, setIsLoadingOrganizations] =
     useState(true);
+
+  // Tracking conversation loading state.
   const [isLoadingConversations, setIsLoadingConversations] =
     useState(false);
+
+  // Tracking customer loading state.
   const [isLoadingCustomers, setIsLoadingCustomers] =
     useState(false);
 
+  // Storing API and UI errors.
   const [error, setError] = useState("");
+
+  // Tracking the current conversation search query.
   const [search, setSearch] = useState("");
 
+  // Tracking whether the create conversation dialog is opening.
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+
+  // Tracking the conversation creation request.
   const [isCreating, setIsCreating] = useState(false);
 
+  // Tracking the selected customer for a new conversation.
   const [customerId, setCustomerId] = useState("");
+
+  // Tracking the subject for a new conversation.
   const [subject, setSubject] = useState("");
+
+  // Tracking the priority for a new conversation.
   const [priority, setPriority] =
     useState<ConversationPriority>("medium");
 
+  // Tracking the conversation currently being updated.
   const [updatingConversationId, setUpdatingConversationId] =
     useState<number | null>(null);
 
+  // Resolving the currently selected organization.
   const selectedOrganization = organizations.find(
     (organization) =>
       organization.id === selectedOrganizationId,
   );
 
+  // Resolving the current user's membership in the selected organization.
   const currentMembership = members.find(
     (member) => member.user_id === user?.id,
   );
 
+  // Checking whether the current user is managing conversations.
   const canManageConversations =
     currentMembership?.role === "owner" ||
     currentMembership?.role === "admin";
 
+  // Loading organizations after authentication is becoming available.
   useEffect(() => {
     if (authLoading || !isAuthenticated) {
       return;
@@ -191,6 +245,7 @@ export default function ConversationsPage() {
 
         setOrganizations(data);
 
+        // Selecting the current organization or the first available organization.
         if (data.length > 0) {
           setSelectedOrganizationId((current) =>
             current &&
@@ -225,6 +280,7 @@ export default function ConversationsPage() {
     };
   }, [authLoading, isAuthenticated]);
 
+  // Loading conversations, customers, and members for the selected organization.
   useEffect(() => {
     if (
       authLoading ||
@@ -245,14 +301,14 @@ export default function ConversationsPage() {
 
     async function fetchOrganizationData() {
       const organizationId = selectedOrganizationId;
-    
+
       if (organizationId === null) {
         return;
       }
-    
+
       setIsLoadingConversations(true);
       setIsLoadingCustomers(true);
-    
+
       try {
         const [
           conversationData,
@@ -310,6 +366,7 @@ export default function ConversationsPage() {
     selectedOrganizationId,
   ]);
 
+  // Filtering conversations according to the current search query.
   const filteredConversations = useMemo(() => {
     const query = search.trim().toLowerCase();
 
@@ -340,6 +397,7 @@ export default function ConversationsPage() {
     });
   }, [conversations, customers, search]);
 
+  // Refreshing conversations for the selected organization.
   async function refreshConversations() {
     if (selectedOrganizationId === null) {
       return;
@@ -372,6 +430,7 @@ export default function ConversationsPage() {
     }
   }
 
+  // Creating a new conversation for the selected customer.
   async function handleCreateConversation(
     event: React.FormEvent<HTMLFormElement>,
   ) {
@@ -422,6 +481,7 @@ export default function ConversationsPage() {
     }
   }
 
+  // Updating the priority of an existing conversation.
   async function handlePriorityChange(
     conversationId: number,
     nextPriority: ConversationPriority,
@@ -468,6 +528,7 @@ export default function ConversationsPage() {
     }
   }
 
+  // Updating the status of an existing conversation.
   async function handleStatusChange(
     conversationId: number,
     nextStatus: ConversationStatus,
@@ -514,6 +575,18 @@ export default function ConversationsPage() {
     }
   }
 
+  // Opening the conversation detail page while preserving the selected organization.
+  function openConversation(conversationId: number) {
+    if (selectedOrganizationId === null) {
+      return;
+    }
+
+    router.push(
+      `/conversations/${conversationId}?organizationId=${selectedOrganizationId}`,
+    );
+  }
+
+  // Displaying a loading state while authentication and organizations are loading.
   if (authLoading || isLoadingOrganizations) {
     return (
       <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center p-6">
@@ -525,6 +598,7 @@ export default function ConversationsPage() {
     );
   }
 
+  // Preventing unauthenticated users from accessing the page.
   if (!isAuthenticated) {
     return null;
   }
@@ -532,6 +606,7 @@ export default function ConversationsPage() {
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-7xl space-y-6">
+        {/* Displaying the conversations page header and organization controls. */}
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <div className="mb-2 flex items-center gap-2">
@@ -601,6 +676,7 @@ export default function ConversationsPage() {
           </div>
         </div>
 
+        {/* Displaying API errors when requests are failing. */}
         {error && (
           <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
@@ -608,6 +684,7 @@ export default function ConversationsPage() {
           </div>
         )}
 
+        {/* Displaying conversation summary metrics. */}
         <div className="grid gap-4 sm:grid-cols-3">
           <SummaryCard
             label="Total"
@@ -644,6 +721,7 @@ export default function ConversationsPage() {
           />
         </div>
 
+        {/* Displaying the conversation list and search controls. */}
         <section className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
           <div className="flex flex-col gap-4 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -690,6 +768,7 @@ export default function ConversationsPage() {
             </div>
           </div>
 
+          {/* Displaying loading, empty, or conversation results states. */}
           {isLoadingConversations ? (
             <div className="flex min-h-64 items-center justify-center">
               <div className="flex items-center gap-3 text-sm text-text-muted">
@@ -739,7 +818,10 @@ export default function ConversationsPage() {
                 (conversation) => (
                   <article
                     key={conversation.id}
-                    className="p-4 transition hover:bg-background/60 sm:p-5"
+                    onClick={() =>
+                      openConversation(conversation.id)
+                    }
+                    className="cursor-pointer p-4 transition hover:bg-background/60 sm:p-5"
                   >
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                       <div className="min-w-0 flex-1">
@@ -795,11 +877,15 @@ export default function ConversationsPage() {
                         </div>
                       </div>
 
+                      {/* Keeping status and priority controls independent from detail navigation. */}
                       <div className="flex flex-col gap-2 sm:flex-row lg:flex-col lg:items-end">
                         {canManageConversations ? (
                           <>
                             <select
                               value={conversation.status}
+                              onClick={(event) =>
+                                event.stopPropagation()
+                              }
                               onChange={(event) =>
                                 void handleStatusChange(
                                   conversation.id,
@@ -826,6 +912,9 @@ export default function ConversationsPage() {
 
                             <select
                               value={conversation.priority}
+                              onClick={(event) =>
+                                event.stopPropagation()
+                              }
                               onChange={(event) =>
                                 void handlePriorityChange(
                                   conversation.id,
@@ -865,6 +954,7 @@ export default function ConversationsPage() {
         </section>
       </div>
 
+      {/* Displaying the create conversation modal. */}
       {isCreateOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
           <div className="w-full max-w-lg rounded-2xl bg-surface shadow-lg">
@@ -891,6 +981,7 @@ export default function ConversationsPage() {
               </button>
             </div>
 
+            {/* Collecting the customer, subject, and priority for the new conversation. */}
             <form
               onSubmit={handleCreateConversation}
               className="space-y-5 p-5"
@@ -1017,6 +1108,7 @@ export default function ConversationsPage() {
   );
 }
 
+// Rendering a reusable summary metric card.
 function SummaryCard({
   label,
   value,
@@ -1044,3 +1136,4 @@ function SummaryCard({
     </div>
   );
 }
+

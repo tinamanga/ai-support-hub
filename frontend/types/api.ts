@@ -63,3 +63,18 @@ export interface Conversation {
   created_at: string;
   updated_at: string;
 }
+
+
+export type MessageSenderType =
+  | "agent"
+  | "customer"
+  | "system";
+
+export interface Message {
+  id: number;
+  conversation_id: number;
+  sender_type: MessageSenderType;
+  sender_user_id: number | null;
+  content: string;
+  created_at: string;
+}
