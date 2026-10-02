@@ -43,3 +43,30 @@ assistants on their websites.
 - Redis
 - Nginx
 - GitHub Actions
+
+## application architecture
+                    AI SUPPORT HUB
+                          │
+             ┌────────────┴────────────┐
+             │                         │
+       Public Website             Authenticated App
+             │                         │
+       ┌─────┴─────┐             ┌─────┴─────┐
+       │           │             │           │
+   AI Chatbot   Login/Register  Dashboard  Workspace
+       │                         │
+   No account                  Role-based
+   required                    navigation
+                                 │
+                ┌────────────────┼────────────────┐
+                │                │                │
+              Owner            Admin            Agent
+                │                │                │
+          Organization       Management       Conversations
+          settings            members         customers
+          billing             settings        assigned work
+                │
+             Member
+                │
+          Personal/workspace
+          access only

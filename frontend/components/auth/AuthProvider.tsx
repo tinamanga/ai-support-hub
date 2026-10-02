@@ -13,10 +13,10 @@ import {
   clearAccessToken,
   getAccessToken,
 } from "@/lib/auth-storage";
-import type { User } from "@/types/api";
+import type { AuthUser } from "@/types/auth";
 
 interface AuthContextValue {
-  user: User | null;
+  user: AuthUser | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   refreshUser: () => Promise<void>;
@@ -34,7 +34,7 @@ interface AuthProviderProps {
 export default function AuthProvider({
   children,
 }: AuthProviderProps) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {

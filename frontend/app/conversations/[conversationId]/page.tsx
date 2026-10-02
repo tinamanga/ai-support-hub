@@ -13,10 +13,12 @@ import {
 
 import { getAccessToken } from "@/lib/auth-storage";
 import {
+  assignConversationAgent,
   getConversation,
   updateConversationPriority,
   updateConversationStatus,
 } from "@/lib/conversations";
+import { getOrganizationMembers } from "@/lib/organizations";
 import {
   createConversationMessage,
   getConversationMessages,
@@ -28,6 +30,7 @@ import type {
   ConversationPriority,
   ConversationStatus,
   Message,
+  OrganizationMember,
   User as UserType,
 } from "@/types/api";
 
@@ -94,11 +97,15 @@ export default function ConversationDetailPage() {
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentUser, setCurrentUser] = useState<UserType | null>(null);
+  const [organizationMembers, setOrganizationMembers] = useState<
+    OrganizationMember[]
+  >([]);
 
   const [messageText, setMessageText] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isAssigning, setIsAssigning] = useState(false);
   const [error, setError] = useState("");
 
   const loadConversation = useCallback(async () => {
@@ -118,13 +125,19 @@ export default function ConversationDetailPage() {
     try {
       setError("");
 
-      const [conversationData, messagesData] = await Promise.all([
+      const [
+        conversationData,
+        messagesData,
+        organizationMembersData,
+      ] = await Promise.all([
         getConversation(token, organizationId, conversationId),
         getConversationMessages(token, organizationId, conversationId),
+        getOrganizationMembers(token, organizationId),
       ]);
       
       setConversation(conversationData);
       setMessages(messagesData);
+      setOrganizationMembers(organizationMembersData);
       
       try {
         // Loading the authenticated user separately so the conversation UI is not waiting for it.
@@ -187,6 +200,36 @@ export default function ConversationDetailPage() {
       );
     } finally {
       setIsSending(false);
+    }
+  }
+
+  async function handleAssignAgent(agentId: string) {
+    const token = getAccessToken();
+
+    if (!token || !conversation || !agentId) {
+      return;
+    }
+
+    try {
+      setIsAssigning(true);
+      setError("");
+
+      const updatedConversation = await assignConversationAgent(
+        token,
+        organizationId,
+        conversation.id,
+        Number(agentId),
+      );
+
+      setConversation(updatedConversation);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to assign the conversation.",
+      );
+    } finally {
+      setIsAssigning(false);
     }
   }
 
@@ -380,16 +423,34 @@ export default function ConversationDetailPage() {
             </div>
 
             <div className="p-5">
-              <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-slate-500">
-                <User className="h-4 w-4" />
-                Assigned agent
-              </div>
-              <p className="font-medium text-slate-900">
-                {conversation.assigned_agent_id
-                  ? `Agent #${conversation.assigned_agent_id}`
-                  : "Unassigned"}
-              </p>
-            </div>
+                <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <User className="h-4 w-4" />
+                    Assigned agent
+                </div>
+
+                <select
+                    value={conversation.assigned_agent_id ?? ""}
+                    onChange={(event) => handleAssignAgent(event.target.value)}
+                    disabled={isAssigning}
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                    <option value="">Unassigned</option>
+
+                    {organizationMembers
+                    .filter((member) => member.role === "agent")
+                    .map((member) => (
+                        <option key={member.id} value={member.user_id}>
+                        Agent #{member.user_id} ({formatLabel(member.role)})
+                        </option>
+                    ))}
+                </select>
+
+                {isAssigning && (
+                    <p className="mt-2 text-xs text-slate-500">
+                    Assigning conversation...
+                    </p>
+                )}
+                </div>
 
             <div className="p-5">
               <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-slate-500">

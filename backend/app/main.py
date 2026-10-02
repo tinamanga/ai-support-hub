@@ -5,6 +5,7 @@ from app.api.v1.organizations import router as organization_router
 from app.api.v1.conversations import router as conversations_router
 from app.api.v1.messages import router as messages_router
 from app.api.v1.customers import router as customers_router
+from app.api.v1.dashboard import router as dashboard_router
 
 
 app = FastAPI(
@@ -26,6 +27,7 @@ app.include_router(organization_router,prefix="/api/v1",)
 app.include_router(conversations_router, prefix="/api/v1")
 app.include_router(messages_router,prefix="/api/v1",)
 app.include_router(customers_router,prefix="/api/v1",)
+app.include_router(dashboard_router, prefix="/api/v1")
 
 
 @app.get("/")

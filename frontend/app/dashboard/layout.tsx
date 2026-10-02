@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 
 import Sidebar from "@/components/layout/sidebar";
 import TopNav from "@/components/layout/top-nav";
+import OrganizationBar from "@/components/layout/organization-bar";
+import AppFooter from "@/components/layout/app-footer";
 import { useAuth } from "@/components/auth/AuthProvider";
 
 export default function DashboardLayout({
@@ -42,9 +44,13 @@ export default function DashboardLayout({
       <div className="flex min-w-0 flex-1 flex-col">
         <TopNav />
 
+        <OrganizationBar />
+
         <main className="min-w-0 flex-1 overflow-auto">
           {children}
         </main>
+
+        <AppFooter />
       </div>
     </div>
   );

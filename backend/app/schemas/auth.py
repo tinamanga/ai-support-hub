@@ -1,5 +1,10 @@
 from pydantic import BaseModel, EmailStr, Field
 
+from app.schemas.organization import (
+    OrganizationMemberResponse,
+    OrganizationResponse,
+)
+
 
 class RegisterRequest(BaseModel):
     email: EmailStr
@@ -14,9 +19,12 @@ class UserResponse(BaseModel):
     full_name: str | None
     is_active: bool
 
-    model_config = {
-        "from_attributes": True,
-    }
+    model_config = {"from_attributes": True}
+
+
+class AuthUserResponse(UserResponse):
+    organization: OrganizationResponse | None = None
+    membership: OrganizationMemberResponse | None = None
 
 
 class RegisterResponse(BaseModel):
@@ -24,6 +32,7 @@ class RegisterResponse(BaseModel):
     organization_id: int
     organization_name: str
     role: str
+
 
 class LoginRequest(BaseModel):
     email: EmailStr

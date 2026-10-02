@@ -1,22 +1,25 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.security.auth import create_access_token
+from app.core.security.dependencies import get_current_user
 from app.database.session import get_db
+from app.models.organization import Organization
+from app.models.organization_member import OrganizationMember
+from app.models.user import User
 from app.schemas.auth import (
+    AuthUserResponse,
     LoginRequest,
     RegisterRequest,
     RegisterResponse,
     TokenResponse,
-    UserResponse,
 )
-from app.core.security.auth import create_access_token
 from app.services.auth_service import (
     RegistrationError,
     authenticate_user,
     register_user,
 )
-from app.core.security.dependencies import get_current_user
-from app.models.user import User
 
 
 router = APIRouter(
@@ -53,6 +56,7 @@ def register(
         role=membership.role,
     )
 
+
 @router.post(
     "/login",
     response_model=TokenResponse,
@@ -85,11 +89,34 @@ def login(
         token_type="bearer",
     )
 
+
 @router.get(
     "/me",
-    response_model=UserResponse,
+    response_model=AuthUserResponse,
 )
 def get_me(
     current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
-    return current_user
+    membership = db.scalar(
+        select(OrganizationMember)
+        .where(OrganizationMember.user_id == current_user.id)
+        .order_by(OrganizationMember.id)
+    )
+
+    organization = None
+
+    if membership:
+        organization = db.get(
+            Organization,
+            membership.organization_id,
+        )
+
+    return AuthUserResponse(
+        id=current_user.id,
+        email=current_user.email,
+        full_name=current_user.full_name,
+        is_active=current_user.is_active,
+        organization=organization,
+        membership=membership,
+    )
