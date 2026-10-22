@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Eye, EyeOff, Loader2, LockKeyhole, Mail } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -9,9 +9,21 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { login } from "@/lib/auth";
 import { setAccessToken } from "@/lib/auth-storage";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 export default function LoginPage() {
   const router = useRouter();
+  const {
+    isAuthenticated,
+    isLoading: authLoading,
+    refreshUser,
+  } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      router.replace("/dashboard");
+    }
+  }, [authLoading, isAuthenticated, router]);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -42,7 +54,16 @@ export default function LoginPage() {
 
       setAccessToken(response.access_token);
 
-      router.push("/dashboard");
+      const userLoaded = await refreshUser();
+
+      if (!userLoaded) {
+        setError(
+          "You signed in, but we couldn't load your account. Please try again.",
+        );
+        return;
+      }
+
+      router.replace("/dashboard");
     } catch (error) {
       setError(
         error instanceof Error

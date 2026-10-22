@@ -22,7 +22,7 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   activeOrganizationId: number | null;
   setActiveOrganizationId: (organizationId: number | null) => void;
-  refreshUser: () => Promise<void>;
+  refreshUser: () => Promise<boolean>;
   logout: () => void;
 }
 
@@ -79,22 +79,24 @@ export default function AuthProvider({
     };
   }, []);
 
-  async function refreshUser() {
+  async function refreshUser(): Promise<boolean> {
     const token = getAccessToken();
 
     if (!token) {
       setUser(null);
       setActiveOrganizationId(null);
-      return;
+      return false;
     }
 
     try {
       const currentUser = await getCurrentUser(token);
       setUser(currentUser);
+      return true;
     } catch {
       clearAccessToken();
       setUser(null);
       setActiveOrganizationId(null);
+      return false;
     }
   }
 
