@@ -8,6 +8,7 @@ import {
   ChevronRight,
   CircleUserRound,
   MessageSquare,
+  Settings,
 } from "lucide-react";
 
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -44,6 +45,12 @@ const navigation: NavigationItem[] = [
     name: "Conversations",
     href: "/conversations",
     icon: MessageSquare,
+    roles: ["owner", "admin", "agent", "member"],
+  },
+  {
+    name: "Settings",
+    href: "/settings",
+    icon: Settings,
     roles: ["owner", "admin", "agent", "member"],
   },
 ];
