@@ -92,13 +92,14 @@ function formatLabel(value: string): string {
 }
 
 export default function DashboardPage() {
-  const { user } = useAuth();
+  const { user, activeOrganizationId } = useAuth();
 
   const [dashboard, setDashboard] = useState<DashboardOverview | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const organizationId = user?.organization?.id;
+  const organizationId =
+    activeOrganizationId ?? user?.organization?.id;
 
   const loadDashboard = useCallback(async () => {
     if (!organizationId) {

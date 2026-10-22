@@ -141,6 +141,8 @@ export default function ConversationsPage() {
     user,
     isAuthenticated,
     isLoading: authLoading,
+    activeOrganizationId,
+    setActiveOrganizationId,
   } = useAuth();
 
   // Creating the router for navigating to conversation details.
@@ -150,10 +152,6 @@ export default function ConversationsPage() {
   const [organizations, setOrganizations] = useState<
     Organization[]
   >([]);
-
-  // Tracking the currently selected organization.
-  const [selectedOrganizationId, setSelectedOrganizationId] =
-    useState<number | null>(null);
 
   // Storing conversations belonging to the selected organization.
   const [conversations, setConversations] = useState<
@@ -207,7 +205,7 @@ export default function ConversationsPage() {
   // Resolving the currently selected organization.
   const selectedOrganization = organizations.find(
     (organization) =>
-      organization.id === selectedOrganizationId,
+      organization.id === activeOrganizationId,
   );
 
   // Resolving the current user's membership in the selected organization.
@@ -245,16 +243,9 @@ export default function ConversationsPage() {
 
         setOrganizations(data);
 
-        // Selecting the current organization or the first available organization.
-        if (data.length > 0) {
-          setSelectedOrganizationId((current) =>
-            current &&
-            data.some(
-              (organization) => organization.id === current,
-            )
-              ? current
-              : data[0].id,
-          );
+        // Clear the active organization if the user has none available.
+        if (data.length === 0) {
+          setActiveOrganizationId(null);
         }
 
         setError("");
@@ -278,14 +269,41 @@ export default function ConversationsPage() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, isAuthenticated]);
+  }, [authLoading, isAuthenticated, setActiveOrganizationId]);
+
+  // Keeping the shared active organization valid for this user.
+  useEffect(() => {
+    if (organizations.length === 0) return;
+
+    const activeOrganizationIsValid = organizations.some(
+      (organization) => organization.id === activeOrganizationId,
+    );
+
+    if (activeOrganizationIsValid) return;
+
+    const userOrganizationId = user?.organization?.id;
+    const userOrganizationIsValid = organizations.some(
+      (organization) => organization.id === userOrganizationId,
+    );
+
+    setActiveOrganizationId(
+      userOrganizationIsValid && userOrganizationId != null
+        ? userOrganizationId
+        : organizations[0].id,
+    );
+  }, [
+    organizations,
+    activeOrganizationId,
+    setActiveOrganizationId,
+    user?.organization?.id,
+  ]);
 
   // Loading conversations, customers, and members for the selected organization.
   useEffect(() => {
     if (
       authLoading ||
       !isAuthenticated ||
-      selectedOrganizationId === null
+      activeOrganizationId === null
     ) {
       return;
     }
@@ -300,7 +318,7 @@ export default function ConversationsPage() {
     let cancelled = false;
 
     async function fetchOrganizationData() {
-      const organizationId = selectedOrganizationId;
+      const organizationId = activeOrganizationId;
 
       if (organizationId === null) {
         return;
@@ -363,7 +381,7 @@ export default function ConversationsPage() {
   }, [
     authLoading,
     isAuthenticated,
-    selectedOrganizationId,
+    activeOrganizationId,
   ]);
 
   // Filtering conversations according to the current search query.
@@ -399,7 +417,7 @@ export default function ConversationsPage() {
 
   // Refreshing conversations for the selected organization.
   async function refreshConversations() {
-    if (selectedOrganizationId === null) {
+    if (activeOrganizationId === null) {
       return;
     }
 
@@ -415,7 +433,7 @@ export default function ConversationsPage() {
     try {
       const data = await getConversations(
         token,
-        selectedOrganizationId,
+        activeOrganizationId,
       );
 
       setConversations(data);
@@ -436,7 +454,7 @@ export default function ConversationsPage() {
   ) {
     event.preventDefault();
 
-    if (selectedOrganizationId === null || !customerId) {
+    if (activeOrganizationId === null || !customerId) {
       setError("Please select a customer.");
       return;
     }
@@ -453,7 +471,7 @@ export default function ConversationsPage() {
     try {
       const conversation = await createConversation(
         token,
-        selectedOrganizationId,
+        activeOrganizationId,
         {
           customer_id: Number(customerId),
           subject: subject.trim() || null,
@@ -487,7 +505,7 @@ export default function ConversationsPage() {
     nextPriority: ConversationPriority,
   ) {
     if (
-      selectedOrganizationId === null ||
+      activeOrganizationId === null ||
       !canManageConversations
     ) {
       return;
@@ -505,7 +523,7 @@ export default function ConversationsPage() {
     try {
       const updated = await updateConversationPriority(
         token,
-        selectedOrganizationId,
+        activeOrganizationId,
         conversationId,
         nextPriority,
       );
@@ -534,7 +552,7 @@ export default function ConversationsPage() {
     nextStatus: ConversationStatus,
   ) {
     if (
-      selectedOrganizationId === null ||
+      activeOrganizationId === null ||
       !canManageConversations
     ) {
       return;
@@ -552,7 +570,7 @@ export default function ConversationsPage() {
     try {
       const updated = await updateConversationStatus(
         token,
-        selectedOrganizationId,
+        activeOrganizationId,
         conversationId,
         nextStatus,
       );
@@ -577,12 +595,12 @@ export default function ConversationsPage() {
 
   // Opening the conversation detail page while preserving the selected organization.
   function openConversation(conversationId: number) {
-    if (selectedOrganizationId === null) {
+    if (activeOrganizationId === null) {
       return;
     }
 
     router.push(
-      `/conversations/${conversationId}?organizationId=${selectedOrganizationId}`,
+      `/conversations/${conversationId}?organizationId=${activeOrganizationId}`,
     );
   }
 
@@ -632,9 +650,9 @@ export default function ConversationsPage() {
           <div className="flex flex-col gap-3 sm:flex-row">
             <div className="relative">
               <select
-                value={selectedOrganizationId ?? ""}
+                value={activeOrganizationId ?? ""}
                 onChange={(event) =>
-                  setSelectedOrganizationId(
+                  setActiveOrganizationId(
                     event.target.value
                       ? Number(event.target.value)
                       : null,
@@ -665,7 +683,7 @@ export default function ConversationsPage() {
               type="button"
               onClick={() => setIsCreateOpen(true)}
               disabled={
-                selectedOrganizationId === null ||
+                activeOrganizationId === null ||
                 customers.length === 0
               }
               className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"

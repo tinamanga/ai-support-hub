@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -19,6 +20,8 @@ interface AuthContextValue {
   user: AuthUser | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  activeOrganizationId: number | null;
+  setActiveOrganizationId: (organizationId: number | null) => void;
   refreshUser: () => Promise<void>;
   logout: () => void;
 }
@@ -35,9 +38,13 @@ export default function AuthProvider({
   children,
 }: AuthProviderProps) {
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [activeOrganizationId, setActiveOrganizationId] =
+    useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function initializeAuth() {
       const token = getAccessToken();
 
@@ -48,16 +55,28 @@ export default function AuthProvider({
 
       try {
         const currentUser = await getCurrentUser(token);
+
+        if (cancelled) return;
+
         setUser(currentUser);
       } catch {
+        if (cancelled) return;
+
         clearAccessToken();
         setUser(null);
+        setActiveOrganizationId(null);
       } finally {
-        setIsLoading(false);
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       }
     }
 
     void initializeAuth();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   async function refreshUser() {
@@ -65,6 +84,7 @@ export default function AuthProvider({
 
     if (!token) {
       setUser(null);
+      setActiveOrganizationId(null);
       return;
     }
 
@@ -74,12 +94,14 @@ export default function AuthProvider({
     } catch {
       clearAccessToken();
       setUser(null);
+      setActiveOrganizationId(null);
     }
   }
 
   function logout() {
     clearAccessToken();
     setUser(null);
+    setActiveOrganizationId(null);
   }
 
   return (
@@ -88,6 +110,8 @@ export default function AuthProvider({
         user,
         isLoading,
         isAuthenticated: Boolean(user),
+        activeOrganizationId,
+        setActiveOrganizationId,
         refreshUser,
         logout,
       }}
