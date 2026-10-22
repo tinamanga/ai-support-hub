@@ -24,13 +24,17 @@ import { getOrganizations } from "@/lib/organizations";
 import type { Customer, Organization } from "@/types/api";
 
 export default function CustomersPage() {
-  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const {
+    user,
+    isAuthenticated,
+    isLoading: authLoading,
+    activeOrganizationId,
+    setActiveOrganizationId,
+  } = useAuth();
 
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
 
-  const [selectedOrganizationId, setSelectedOrganizationId] =
-    useState<number | null>(null);
 
   const [isLoadingOrganizations, setIsLoadingOrganizations] =
     useState(true);
@@ -52,9 +56,9 @@ export default function CustomersPage() {
     () =>
       organizations.find(
         (organization) =>
-          organization.id === selectedOrganizationId,
+          organization.id === activeOrganizationId,
       ) ?? null,
-    [organizations, selectedOrganizationId],
+    [organizations, activeOrganizationId],
   );
 
   const canCreateCustomer = user !== null;
@@ -83,21 +87,6 @@ export default function CustomersPage() {
         }
 
         setOrganizations(data);
-
-        if (data.length > 0) {
-          setSelectedOrganizationId((currentId) => {
-            if (
-              currentId !== null &&
-              data.some(
-                (organization) => organization.id === currentId,
-              )
-            ) {
-              return currentId;
-            }
-
-            return data[0].id;
-          });
-        }
 
         setError("");
       } catch (requestError) {
@@ -128,7 +117,7 @@ export default function CustomersPage() {
     if (
       authLoading ||
       !isAuthenticated ||
-      selectedOrganizationId === null
+      activeOrganizationId === null
     ) {
       return;
     }
@@ -150,7 +139,7 @@ export default function CustomersPage() {
       try {
         const data = await getCustomers(
           accessToken,
-          selectedOrganizationId as number,
+          activeOrganizationId as number,
         );
 
         if (cancelled) {
@@ -184,11 +173,11 @@ export default function CustomersPage() {
   }, [
     authLoading,
     isAuthenticated,
-    selectedOrganizationId,
+    activeOrganizationId,
   ]);
 
   async function loadCustomers() {
-    if (selectedOrganizationId === null) {
+    if (activeOrganizationId === null) {
       return;
     }
 
@@ -205,7 +194,7 @@ export default function CustomersPage() {
     try {
       const data = await getCustomers(
         token,
-        selectedOrganizationId,
+        activeOrganizationId,
       );
 
       setCustomers(data);
@@ -225,7 +214,7 @@ export default function CustomersPage() {
   ) {
     event.preventDefault();
 
-    if (selectedOrganizationId === null) {
+    if (activeOrganizationId === null) {
       setError("Please select an organization first.");
       return;
     }
@@ -249,7 +238,7 @@ export default function CustomersPage() {
     try {
       const customer = await createCustomer(
         token,
-        selectedOrganizationId,
+        activeOrganizationId,
         {
           full_name: fullName.trim(),
           email: email.trim() || null,
@@ -356,9 +345,9 @@ export default function CustomersPage() {
 
           <div className="flex flex-col gap-3 sm:flex-row">
             <select
-              value={selectedOrganizationId ?? ""}
+              value={activeOrganizationId ?? ""}
               onChange={(event) => {
-                setSelectedOrganizationId(
+                setActiveOrganizationId(
                   Number(event.target.value),
                 );
                 setSuccess("");
