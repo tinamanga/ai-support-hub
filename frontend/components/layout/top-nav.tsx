@@ -1,13 +1,20 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Bell, ChevronDown, LogOut, Menu, X } from "lucide-react";
 import { useRouter } from "next/navigation";
+import {
+  getNavigationForRole,
+  normalizeRole,
+} from "@/components/layout/sidebar";
 
 import { useAuth } from "@/components/auth/AuthProvider";
 
 export default function TopNav() {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, logout } = useAuth();
 
   const [open, setOpen] = useState(false);
@@ -15,6 +22,8 @@ export default function TopNav() {
 
   const fullName = user?.full_name || "User";
   const email = user?.email || "";
+  const role = normalizeRole(user?.membership?.role);
+  const navigation = getNavigationForRole(role);
 
   const initials = fullName
     .trim()
@@ -31,7 +40,7 @@ export default function TopNav() {
   }
 
   return (
-    <header className="relative flex h-16 items-center justify-between border-b border-border bg-surface px-4 sm:px-6">
+    <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center justify-between border-b border-border bg-surface px-4 sm:px-6">
       <button
         type="button"
         className="rounded-md p-2 text-text-secondary transition-colors hover:bg-surface-muted hover:text-text lg:hidden"
@@ -115,15 +124,52 @@ export default function TopNav() {
       </div>
 
       {open && (
-        <div className="absolute left-0 right-0 top-16 z-50 border-b border-border bg-surface p-4 shadow-md lg:hidden">
-          <p className="text-sm font-medium text-text">
-            Navigation
+        <nav
+          className="absolute left-0 right-0 top-16 z-50 max-h-[calc(100dvh-4rem)] overflow-y-auto border-b border-border bg-surface p-4 shadow-lg lg:hidden"
+          aria-label="Mobile navigation"
+        >
+          <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-wider text-text-muted">
+            Workspace
           </p>
 
-          <p className="mt-1 text-xs text-text-muted">
-            Mobile navigation will be connected in the next step.
-          </p>
-        </div>
+          <div className="space-y-1">
+            {navigation.map((item) => {
+              const isActive =
+                pathname === item.href ||
+                pathname.startsWith(`${item.href}/`);
+              const Icon = item.icon;
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setOpen(false)}
+                  aria-current={isActive ? "page" : undefined}
+                  className={`flex items-center gap-3 rounded-md px-3 py-3 text-sm font-medium transition-colors ${
+                    isActive
+                      ? "bg-primary-light text-primary"
+                      : "text-text-secondary hover:bg-surface-muted hover:text-text"
+                  }`}
+                >
+                  <Icon size={18} aria-hidden="true" />
+                  <span>{item.name}</span>
+                </Link>
+              );
+            })}
+          </div>
+
+          <div className="mt-4 border-t border-border px-3 pt-4">
+            <p className="truncate text-sm font-semibold text-text">
+              {fullName}
+            </p>
+            <p className="truncate text-xs text-text-muted">
+              {email}
+            </p>
+            <p className="mt-1 text-xs font-medium capitalize text-primary">
+              {role}
+            </p>
+          </div>
+        </nav>
       )}
     </header>
   );

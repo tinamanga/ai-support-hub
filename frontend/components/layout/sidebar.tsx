@@ -8,7 +8,6 @@ import {
   ChevronRight,
   CircleUserRound,
   MessageSquare,
-  Settings,
 } from "lucide-react";
 
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -49,14 +48,6 @@ const navigation: NavigationItem[] = [
   },
 ];
 
-const secondaryNavigation: NavigationItem[] = [
-  {
-    name: "Settings",
-    href: "/settings",
-    icon: Settings,
-    roles: ["owner", "admin", "agent", "member"],
-  },
-];
 
 function getInitials(
   fullName: string | null,
@@ -75,7 +66,7 @@ function getInitials(
   return email.slice(0, 2).toUpperCase();
 }
 
-function normalizeRole(role: string | undefined): Role {
+export function normalizeRole(role: string | undefined): Role {
   if (
     role === "owner" ||
     role === "admin" ||
@@ -86,6 +77,10 @@ function normalizeRole(role: string | undefined): Role {
   }
 
   return "member";
+}
+
+export function getNavigationForRole(role: Role): NavigationItem[] {
+  return navigation.filter((item) => item.roles.includes(role));
 }
 
 export default function Sidebar() {
@@ -102,17 +97,10 @@ export default function Sidebar() {
     email,
   );
 
-  const visibleNavigation = navigation.filter((item) =>
-    item.roles.includes(role),
-  );
-
-  const visibleSecondaryNavigation =
-    secondaryNavigation.filter((item) =>
-      item.roles.includes(role),
-    );
+  const visibleNavigation = getNavigationForRole(role);
 
   return (
-    <aside className="hidden w-64 shrink-0 border-r border-border bg-surface lg:flex lg:flex-col">
+    <aside className="sticky top-0 hidden h-screen w-64 shrink-0 border-r border-border bg-surface lg:flex lg:flex-col">
       {/* Brand */}
       <div className="flex h-16 items-center border-b border-border px-6">
         <Link
@@ -137,7 +125,7 @@ export default function Sidebar() {
 
       {/* Navigation */}
       <nav
-        className="flex-1 space-y-8 overflow-y-auto px-3 py-6"
+        className="min-h-0 flex-1 space-y-8 overflow-y-auto px-3 py-6"
         aria-label="Main navigation"
       >
         <div>
@@ -191,58 +179,7 @@ export default function Sidebar() {
           </div>
         </div>
 
-        {visibleSecondaryNavigation.length > 0 && (
-          <div>
-            <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-wider text-text-muted">
-              System
-            </p>
 
-            <div className="space-y-1">
-              {visibleSecondaryNavigation.map((item) => {
-                const isActive =
-                  pathname === item.href ||
-                  pathname.startsWith(`${item.href}/`);
-
-                const Icon = item.icon;
-
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`group flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
-                      isActive
-                        ? "bg-primary-light text-primary"
-                        : "text-text-secondary hover:bg-surface-muted hover:text-text"
-                    }`}
-                  >
-                    <Icon
-                      size={18}
-                      strokeWidth={isActive ? 2.25 : 2}
-                      className={
-                        isActive
-                          ? "text-primary"
-                          : "text-text-muted group-hover:text-text"
-                      }
-                      aria-hidden="true"
-                    />
-
-                    <span className="flex-1">
-                      {item.name}
-                    </span>
-
-                    {isActive && (
-                      <ChevronRight
-                        size={15}
-                        strokeWidth={2}
-                        aria-hidden="true"
-                      />
-                    )}
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        )}
       </nav>
 
       {/* User */}
