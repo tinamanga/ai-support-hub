@@ -28,7 +28,6 @@ class KnowledgeEntryCreate(BaseModel):
         value = value.strip()
         return value or None
 
-
 class KnowledgeEntryUpdate(BaseModel):
     title: str | None = Field(default=None, min_length=2, max_length=255)
     content: str | None = Field(default=None, min_length=1)
@@ -37,9 +36,9 @@ class KnowledgeEntryUpdate(BaseModel):
 
     @field_validator("title", "content")
     @classmethod
-    def reject_blank_text(cls, value: str | None) -> str | None:
+    def reject_blank_text(cls, value: str | None) -> str:
         if value is None:
-            return None
+            raise ValueError("This field cannot be null.")
 
         value = value.strip()
 
