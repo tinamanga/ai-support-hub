@@ -34,6 +34,7 @@ def reset_test_database():
                     conversations,
                     customers,
                     messages,
+                    knowledge_entries,
                     organizations,
                     users
                 RESTART IDENTITY CASCADE
