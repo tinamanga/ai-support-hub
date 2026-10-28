@@ -7,6 +7,7 @@ import {
   Building2,
   ChevronRight,
   CircleUserRound,
+  BookOpen,
   MessageSquare,
   Settings,
 } from "lucide-react";
@@ -45,6 +46,12 @@ const navigation: NavigationItem[] = [
     name: "Conversations",
     href: "/conversations",
     icon: MessageSquare,
+    roles: ["owner", "admin", "agent", "member"],
+  },
+  {
+    name: "Knowledge Base",
+    href: "/knowledge",
+    icon: BookOpen,
     roles: ["owner", "admin", "agent", "member"],
   },
   {

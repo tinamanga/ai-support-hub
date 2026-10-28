@@ -78,3 +78,13 @@ export interface Message {
   content: string;
   created_at: string;
 }
+export interface KnowledgeEntry {
+  id: number;
+  organization_id: number;
+  title: string;
+  content: string;
+  category: string | null;
+  is_published: boolean;
+  created_at: string;
+  updated_at: string;
+}
