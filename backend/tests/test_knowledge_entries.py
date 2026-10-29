@@ -1,5 +1,7 @@
 from uuid import uuid4
 
+import pytest
+
 
 def register_user(client, label="user"):
     suffix = uuid4().hex[:10]
@@ -96,8 +98,10 @@ def test_knowledge_endpoints_require_authentication(client):
     response = client.get("/api/v1/organizations/1/knowledge")
     assert response.status_code == 401
 
-
-def test_agent_sees_published_entries_but_not_drafts(client):
+@pytest.mark.parametrize("role", ["agent", "member"])
+def test_agent_and_member_see_published_entries_but_not_drafts(
+    client, role
+):
     owner = register_user(client, "owner")
     agent = register_user(client, "agent")
 
@@ -110,7 +114,7 @@ def test_agent_sees_published_entries_but_not_drafts(client):
         headers=owner_headers,
         json={
             "user_id": agent["user_id"],
-            "role": "agent",
+            "role": role,
         },
     )
     assert add_member.status_code == 201, add_member.text
@@ -279,3 +283,51 @@ def test_update_rejects_null_title_and_content(client):
             json=payload,
         )
         assert response.status_code == 422
+
+def test_admin_can_publish_and_unpublish_knowledge_entry(client):
+    owner = register_user(client, "publishowner")
+    admin = register_user(client, "publishadmin")
+
+    organization_id = owner["organization_id"]
+    owner_headers = auth_headers(owner["token"])
+    admin_headers = auth_headers(admin["token"])
+
+    membership = client.post(
+        f"/api/v1/organizations/{organization_id}/members",
+        headers=owner_headers,
+        json={
+            "user_id": admin["user_id"],
+            "role": "admin",
+        },
+    )
+    assert membership.status_code == 201, membership.text
+
+    base_url = f"/api/v1/organizations/{organization_id}/knowledge"
+
+    created = client.post(
+        base_url,
+        headers=owner_headers,
+        json={
+            "title": "Customer support policy",
+            "content": "Contact support for assistance.",
+        },
+    )
+    assert created.status_code == 201, created.text
+
+    entry_id = created.json()["id"]
+
+    published = client.patch(
+        f"{base_url}/{entry_id}",
+        headers=admin_headers,
+        json={"is_published": True},
+    )
+    assert published.status_code == 200, published.text
+    assert published.json()["is_published"] is True
+
+    unpublished = client.patch(
+        f"{base_url}/{entry_id}",
+        headers=admin_headers,
+        json={"is_published": False},
+    )
+    assert unpublished.status_code == 200, unpublished.text
+    assert unpublished.json()["is_published"] is False

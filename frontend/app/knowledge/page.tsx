@@ -29,8 +29,15 @@ import {
   getKnowledgeEntries,
   updateKnowledgeEntry,
 } from "@/lib/knowledge";
-import { getOrganizations } from "@/lib/organizations";
-import type { KnowledgeEntry, Organization } from "@/types/api";
+import {
+  getOrganizationMembers,
+  getOrganizations,
+} from "@/lib/organizations";
+import type {
+  KnowledgeEntry,
+  Organization,
+  OrganizationRole,
+} from "@/types/api";
 
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
@@ -71,6 +78,11 @@ export default function KnowledgePage() {
 
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [entries, setEntries] = useState<KnowledgeEntry[]>([]);
+  // Resolve permissions for the selected organization, not the user's default organization.
+const [selectedOrganizationRole, setSelectedOrganizationRole] =
+  useState<OrganizationRole | null>(null);
+
+const [isLoadingRole, setIsLoadingRole] = useState(false);
   const [isLoadingOrganizations, setIsLoadingOrganizations] = useState(true);
   const [isLoadingEntries, setIsLoadingEntries] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -85,8 +97,69 @@ export default function KnowledgePage() {
   const [editingEntryId, setEditingEntryId] = useState<number | null>(null);
   const [form, setForm] = useState<EntryForm>(emptyForm);
 
-  const role = user?.membership?.role;
-  const canManage = role === "owner" || role === "admin";
+  const canManage =
+  !isLoadingRole &&
+  (selectedOrganizationRole === "owner" ||
+    selectedOrganizationRole === "admin");
+      useEffect(() => {
+    let cancelled = false;
+
+    async function loadSelectedOrganizationRole() {
+      setSelectedOrganizationRole(null);
+
+      if (
+        authLoading ||
+        !isAuthenticated ||
+        !user ||
+        activeOrganizationId === null
+      ) {
+        setIsLoadingRole(false);
+        return;
+      }
+
+      setIsLoadingRole(true);
+
+      try {
+        const token = getAccessToken();
+
+        if (!token) {
+          throw new Error("Your session has expired. Please log in again.");
+        }
+
+        const members = await getOrganizationMembers(
+          token,
+          activeOrganizationId,
+        );
+
+        if (cancelled) return;
+
+        const membership = members.find(
+          (member) => member.user_id === user.id,
+        );
+
+        setSelectedOrganizationRole(membership?.role ?? null);
+      } catch {
+        if (!cancelled) {
+          setSelectedOrganizationRole(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingRole(false);
+        }
+      }
+    }
+
+    void loadSelectedOrganizationRole();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    authLoading,
+    isAuthenticated,
+    user,
+    activeOrganizationId,
+  ]);
 
   const selectedOrganization = useMemo(
     () =>
@@ -257,8 +330,7 @@ export default function KnowledgePage() {
     authLoading,
     isAuthenticated,
     activeOrganizationId,
-  ]);
-
+  ])
   const categories = useMemo(() => {
     const values = entries
       .map((entry) => entry.category?.trim())

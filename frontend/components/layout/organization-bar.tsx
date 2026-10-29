@@ -6,8 +6,14 @@ import { Building2 } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import Badge from "@/components/ui/Badge";
 import { getAccessToken } from "@/lib/auth-storage";
-import { getOrganizations } from "@/lib/organizations";
-import type { Organization } from "@/types/api";
+import {
+  getOrganizationMembers,
+  getOrganizations,
+} from "@/lib/organizations";
+import type {
+  Organization,
+  OrganizationRole,
+} from "@/types/api";
 
 export default function OrganizationBar() {
   const {
@@ -18,6 +24,7 @@ export default function OrganizationBar() {
   } = useAuth();
 
   const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [role, setRole] = useState<OrganizationRole | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -74,6 +81,48 @@ export default function OrganizationBar() {
     user?.organization?.id,
   ]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSelectedOrganizationRole() {
+      setRole(null);
+
+      if (!isAuthenticated || activeOrganizationId === null || !user) {
+        return;
+      }
+
+      const token = getAccessToken();
+
+      if (!token) return;
+
+      try {
+        const members = await getOrganizationMembers(
+          token,
+          activeOrganizationId,
+        );
+
+        if (cancelled) return;
+
+        const membership = members.find(
+          (member) => member.user_id === user.id,
+        );
+
+        setRole(membership?.role ?? null);
+      } catch {
+        if (!cancelled) {
+          setRole(null);
+        }
+      }
+    }
+
+    void loadSelectedOrganizationRole();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, activeOrganizationId, user]);
+
+
   const organization =
     organizations.find(
       (item) => item.id === activeOrganizationId,
@@ -83,10 +132,7 @@ export default function OrganizationBar() {
       ? user?.organization
       : null);
 
-  const role =
-    organization?.id === user?.organization?.id
-      ? user?.membership?.role
-      : null;
+  
 
   if (!organization) {
     return null;
